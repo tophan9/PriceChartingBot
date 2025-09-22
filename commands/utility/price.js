@@ -187,7 +187,7 @@ module.exports = {
           return sales.slice(0, 5); // Limit to 5 most recent sales
         }, gradeSelector);
 
-        console.log(`Scraped recent sales for ${i.customId}:`, recentSales); // Log the scraped data
+        console.log(`Scraped recent sales for ${i.customLabel}:`, recentSales); // Log the scraped data
 
         if (!recentSales || recentSales.length === 0) {
           await i.followUp({ content: `No recent sales found for ${i.customId}.` }); // Visible to everyone
@@ -199,7 +199,7 @@ module.exports = {
           const salesList = recentSales.map(sale => `• **${sale.date}** - **$${sale.price.toFixed(2)}**`).join("\n");
 
           await i.followUp({
-            content: `**Recent Sales for ${i.customId}:**\n${salesList}\n\n**Average Price:** $${averagePrice.toFixed(2)}` // Visible to everyone
+            content: `**Recent Sales for ${i.customLabel}:**\n${salesList}\n\n**Average Price:** $${averagePrice.toFixed(2)}` // Visible to everyone
           });
         }
       });
