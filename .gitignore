@@ -16,6 +16,9 @@
 # Environment variables
 .env
 
+# Configuration Files
+config.json
+
 # Mono auto generated files
 mono_crash.*
 
