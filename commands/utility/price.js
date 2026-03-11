@@ -1,10 +1,9 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const puppeteer = require("puppeteer");
-const puppeteerExtra = require("puppeteer-extra");
-const pluginStealth = require("puppeteer-extra-plugin-stealth");
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import puppeteer from "puppeteer";
+import puppeteerExtra from "puppeteer-extra";
+import pluginStealth from "puppeteer-extra-plugin-stealth";
 
-module.exports = {
-  data: new SlashCommandBuilder()
+export const data = new SlashCommandBuilder()
     .setName("price")
     .setDescription("Get the current price of a Pokémon card from PriceCharting")
     .addStringOption(option =>
@@ -21,15 +20,11 @@ module.exports = {
       option.setName("number")
         .setDescription("The card number (e.g., 110, 001, 15/108)")
         .setRequired(true)
-    ),
+    );
 
-  async execute(interaction) {
-    await interaction.deferReply(); // Acknowledge the interaction immediately
-
+export async function execute(interaction) {
     function capitalizeWords(str) {
-      return str
-        .toLowerCase()
-        .replace(/\b\w/g, char => char.toUpperCase());
+      return str.replace(/\b\w/g, char => char.toUpperCase());
     }
 
     const setNameRaw = interaction.options.getString("set");
@@ -212,5 +207,4 @@ module.exports = {
       console.error("Error during scraping:", error);
       await interaction.editReply(`❌ Could not fetch price. PriceCharting may have changed their page format.\n🔗 [Try manually](${url})`);
     }
-  },
-};
+}

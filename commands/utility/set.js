@@ -1,24 +1,20 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
-const puppeteer = require("puppeteer");
-const puppeteerExtra = require("puppeteer-extra");
-const pluginStealth = require("puppeteer-extra-plugin-stealth");
+import { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } from "discord.js";
+import puppeteer from "puppeteer";
+import puppeteerExtra from "puppeteer-extra";
+import pluginStealth from "puppeteer-extra-plugin-stealth";
+import axios from "axios";
+import { load as cheerio } from "cheerio";
 
-const axios = require("axios");
-const cheerio = require("cheerio");
-
-module.exports = {
-    data: new SlashCommandBuilder()
+export const data = new SlashCommandBuilder()
         .setName("set")
         .setDescription("Get information about Pokémon cards from a set on PriceCharting")
         .addStringOption(option =>
             option.setName("set")
                 .setDescription("The set name (e.g., Base Set, Evolving Skies)")
                 .setRequired(true)
-        ),
+        );
 
-    async execute(interaction) {
-        await interaction.deferReply();
-
+export async function execute(interaction) {
         function capitalizeWords(str) {
             return str
                 .toLowerCase()
@@ -173,5 +169,4 @@ module.exports = {
             console.error("Error during scraping:", error);
             await interaction.editReply(`❌ Could not fetch price. PriceCharting may have changed their page format.\n🔗 [Try manually](${url})`);
         }
-    },
-};
+}
