@@ -4,7 +4,7 @@
     "axios-cookiejar-support": "^6.0.2",
     "cheerio": "^1.0.0",
     "discord-interactions": "^4.1.1",
-    "discord.js": "^14.18.0",
+    "discord.js": "^14.24.0",
     "dotenv": "^16.4.7",
     "express": "^4.22.1",
     "jsdom": "^26.0.0",
