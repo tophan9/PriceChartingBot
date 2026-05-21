@@ -1,4 +1,4 @@
-import fs from 'fs';
+ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Client, Collection, GatewayIntentBits, Events } from 'discord.js';
@@ -60,18 +60,18 @@ loadCommands().then(() => {
 	client.login(token);
 });
 
-client.once('ready', function () {
+client.once(Events.ClientReady, function () {
 	console.log('Ready! Logged in as ' + client.user.tag);
 });
 
 client.on('interactionCreate', async function (interaction) {
 	if (!interaction.isCommand()) return;
 
-	// Defer immediately to avoid timeout on Raspberry Pi
+	// Defer immediately to avoid timeout on slow requests
 	try {
 		await interaction.deferReply();
 	} catch (err) {
-		console.error('Failed to defer reply:', err);
+		console.error('Failed to defer reply:', err.message);
 		return;
 	}
 
@@ -92,21 +92,12 @@ client.on('interactionCreate', async function (interaction) {
 	} catch (error) {
 		console.error(error);
 		try {
-			if (interaction.replied || interaction.deferred) {
-				await interaction.followUp({
-					content: 'There was an error while executing this command!',
-					flags: 64
-				});
-			} else {
-				await interaction.editReply({
-					content: 'There was an error while executing this command!',
-					flags: 64
-				});
-			}
+			await interaction.editReply({
+				content: 'There was an error while executing this command!',
+				flags: 64
+			});
 		} catch (err) {
 			console.error('Failed to send error message:', err);
 		}
 	}
 });
-
-client.login(token);

@@ -1,5 +1,5 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+import axios from 'axios';
+import { load as cheerio } from 'cheerio';
 
 async function getCardPrice(url) {
     try {
@@ -8,7 +8,7 @@ async function getCardPrice(url) {
                 'User-Agent': 'Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
             }
         });
-        const $ = cheerio.load(html);
+        const $ = cheerio(html);
 
         // Adjust this selector based on the actual structure of PriceCharting's HTML
         const price = $('span.price').first().text().trim();
@@ -24,4 +24,4 @@ async function getCardPrice(url) {
     }
 }
 
-module.exports = getCardPrice;
+export default getCardPrice;

@@ -1,7 +1,4 @@
 import { SlashCommandBuilder, EmbedBuilder } from "discord.js";
-import puppeteer from "puppeteer";
-import puppeteerExtra from "puppeteer-extra";
-import pluginStealth from "puppeteer-extra-plugin-stealth";
 import axios from "axios";
 import { load as cheerio } from "cheerio";
 
@@ -35,79 +32,58 @@ export async function execute(interaction) {
     const capitalizedSealedName = capitalizeWords(sealedNameRaw);
 
     // Format inputs for URL
-    const formattedSetName = "pokemon-" + setNameRaw
+    const formattedSetName = "pokemon-" + setNameRaw.toLowerCase()
         .replace(/[^a-z0-9\s&-]/gi, "")  
         .replace(/\s+/g, "-");
 
     const formattedSealedName = sealedNameRaw.toLowerCase()
+         .replace(/[^a-z0-9\s&-]/gi, "")
          .replace(/\s+/g, "-");
 
     const url = `https://www.pricecharting.com/game/${formattedSetName}/${formattedSealedName}`;
-    
-    console.log(`Scraping URL: ${url}`);
-    
-    
-    puppeteerExtra.use(pluginStealth());
+    console.log('Fetching PriceCharting URL:', url);
 
     try {
-		
-	 const browser = await puppeteerExtra.launch({
-        headless: "new",  
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--no-zygote',
-          '--single-process',
-          '--no-first-run',
-          '--disable-background-networking',
-          '--disable-default-apps',
-          '--disable-extensions',
-          '--disable-sync',
-          '--metrics-recording-only',
-          '--mute-audio'
-          ],  // Pi-specific settings for better performance
-        executablePath: '/usr/bin/chromium-browser',  // Use Chromium installed on the Pi
-      });
-      const page = await browser.newPage();
-
-      await page.setRequestInterception(true);
-      
-      page.on("request", (req) => {
-        const blocked = ["image", "stylesheet", "font", "media"];
-        if (blocked.includes(req.resourceType())) {
-          req.abort();
-        } else {
-          req.continue();
-        }
-      });
-  
-      // Set a custom user-agent to avoid being blocked by the site
-      await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-      await page.goto(url, { waitUntil: "domcontentloaded"});
-
-      // Scrape prices from the page
-      const prices = await page.evaluate(() => {
-        const getPrice = (selector) => {
-          const el = document.querySelector(selector);
-          return el ? el.innerText.trim() : "N/A";
-        };
-
-        return {
-          ungraded: getPrice("#used_price .price"),
-          grade7: getPrice("#complete_price .price"),
-          grade8: getPrice("#new_price .price"),
-          grade9: getPrice("#graded_price .price"),
-          grade9_5: getPrice("#box_only_price .price"),
-          psa10: getPrice("#manual_only_price .price"),
-        };
+      // Fetch HTML with axios
+      const { data: html } = await axios.get(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'gzip, deflate',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1'
+        },
+        timeout: 10000
       });
 
-      await browser.close();
-	  
-      // If no valid prices were found, send a reply with a manual check link
+      const $ = cheerio(html);
+
+      // Extract prices by parsing table rows
+      const priceMap = {};
+      $('table').each((tableIdx, table) => {
+        $(table).find('tr').each((rowIdx, row) => {
+          const cells = $(row).find('td');
+          if (cells.length >= 2) {
+            const label = cells.eq(0).text().trim();
+            const price = cells.eq(1).find('.price').text().trim() || cells.eq(1).text().trim();
+            if (label && price && price.includes('$')) {
+              priceMap[label] = price;
+            }
+          }
+        });
+      });
+
+      const prices = {
+        ungraded: priceMap['Ungraded'] || "N/A",
+        grade7: priceMap['Grade 7'] || "N/A",
+        grade8: priceMap['Grade 8'] || "N/A",
+        grade9: priceMap['Grade 9'] || "N/A",
+        grade9_5: priceMap['Grade 9.5'] || "N/A",
+        psa10: priceMap['PSA 10'] || "N/A",
+      };
+
+      // If no valid prices were found
       if (Object.values(prices).every(price => price === "N/A")) {
         return interaction.editReply(`❌ No valid prices found for **${sealedNameRaw}** in **${setNameRaw}**.\n🔗 [Check manually](${url})`);
       }
@@ -128,7 +104,14 @@ export async function execute(interaction) {
 
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
-      console.error("Error during scraping:", error);
-      await interaction.editReply(`❌ Could not fetch price. PriceCharting may have changed their page format.\n🔗 [Try manually](${url})`);
+      console.error("Error during scraping:", error.message);
+      if (error.response) {
+        console.error("Response status:", error.response.status);
+      }
+      try {
+        await interaction.editReply(`❌ Could not fetch price. PriceCharting may have changed their page format.\n🔗 [Try manually](${url})`);
+      } catch (discordErr) {
+        console.error("Failed to send error reply:", discordErr.message);
+      }
     }
 }
